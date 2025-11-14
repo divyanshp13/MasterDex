@@ -92,3 +92,5 @@ export interface MoveDetail {
     name: string;
   };
 }
+
+// ..

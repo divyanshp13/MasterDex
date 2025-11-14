@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Pokemon, PokemonListResult, Region, Species, EvolutionChain, EvolutionNode, MoveDetail } from './types';
 import { API_BASE_URL, POKEMON_PAGE_LIMIT, REGIONS, TYPE_COLORS, TYPE_GRADIENTS, LEGENDARY_AND_MYTHICAL_POKEMON, POKEMON_COLOR_GRADIENTS, TYPE_GLOW_COLORS } from './constants';
 
-// --- HOOKS ---
+// --- HOOKS -----
 function useDebounce<T>(value: T, delay: number): T {
     const [debouncedValue, setDebouncedValue] = useState<T>(value);
     useEffect(() => {

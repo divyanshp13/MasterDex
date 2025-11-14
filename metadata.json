@@ -1,5 +1,5 @@
 {
   "name": "MasterDex",
-  "description": "A visually stunning, feature-rich Pokedex application named MasterDex, built with React and Tailwind CSS. It features comprehensive filtering, infinite scrolling, dynamic type-based theming, and a detailed view with animated evolution chains.",
+  "description": "A Visually tunning, feature-rich Pokedex application named MasterDex, built with React and Tailwind CSS. It features comprehensive filtering, infinite scrolling, dynamic type-based theming, and a detailed view with animated evolution chains.",
   "requestFramePermissions": []
 }

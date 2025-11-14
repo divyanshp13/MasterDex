@@ -3,7 +3,7 @@ import { Region } from './types';
 
 export const API_BASE_URL = "https://pokeapi.co/api/v2";
 export const POKEMON_PAGE_LIMIT = 50;
-
+// ..
 export const REGIONS: Region[] = [
     { name: 'Kanto', limit: 151, offset: 0 },
     { name: 'Johto', limit: 100, offset: 151 },
