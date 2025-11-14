@@ -3,7 +3,22 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Pokemon, PokemonListResult, Region, Species, EvolutionChain, EvolutionNode } from './types';
 import { API_BASE_URL, POKEMON_PAGE_LIMIT, REGIONS, TYPE_COLORS, TYPE_GRADIENTS, LEGENDARY_AND_MYTHICAL_POKEMON, POKEMON_COLOR_GRADIENTS, TYPE_GLOW_COLORS } from './constants';
 
-// HELPER FUNCTIONS & ASSETS
+// --- HOOKS ---
+function useDebounce<T>(value: T, delay: number): T {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]);
+    return debouncedValue;
+}
+
+
+// --- HELPER FUNCTIONS & ASSETS ---
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
 const fetchJson = async <T,>(url: string): Promise<T> => {
@@ -63,6 +78,23 @@ const TypeBadge: React.FC<TypeBadgeProps> = ({ type }) => (
 const LoadingSpinner: React.FC = () => (
     <div className="flex justify-center items-center p-8">
         <div className="w-12 h-12 border-4 border-pink-400 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+);
+
+const SkeletonCard: React.FC = () => (
+    <div className="p-4 rounded-xl bg-purple-900/50 animate-pulse">
+        <div className="h-32 sm:h-40 bg-purple-800/50 rounded-lg"></div>
+        <div className="h-6 w-3/4 mx-auto mt-4 bg-purple-800/50 rounded-md"></div>
+        <div className="flex justify-center gap-2 mt-2">
+            <div className="h-5 w-1/4 bg-purple-800/50 rounded-full"></div>
+            <div className="h-5 w-1/4 bg-purple-800/50 rounded-full"></div>
+        </div>
+    </div>
+);
+
+const SkeletonGrid: React.FC = () => (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)}
     </div>
 );
 
@@ -207,6 +239,11 @@ interface PokemonDetailProps {
 }
 const PokemonDetail: React.FC<PokemonDetailProps> = ({ pokemon, onBackClick, onNavigate, isFirst, isLast }) => {
     const [pokemonColor, setPokemonColor] = useState<string | null>(null);
+    const backButtonRef = useRef<HTMLButtonElement>(null);
+
+    useEffect(() => {
+        backButtonRef.current?.focus();
+    }, []);
 
     useEffect(() => {
         const fetchColor = async () => {
@@ -238,8 +275,8 @@ const PokemonDetail: React.FC<PokemonDetailProps> = ({ pokemon, onBackClick, onN
     const glowColor = TYPE_GLOW_COLORS[primaryType] || 'rgba(168, 162, 158, 0.4)';
 
     return (
-        <div className={`fixed inset-0 z-50 p-4 animate-fade-in ${gradient} bg-pattern overflow-y-auto`}>
-             <div 
+        <div className={`fixed inset-0 z-50 p-2 sm:p-4 bg-pattern overflow-y-auto ${gradient}`}>
+            <div 
                 className="absolute inset-0 z-0" 
                 style={{
                     background: `radial-gradient(circle at 50% 40%, ${glowColor} 0%, transparent 60%)`
@@ -249,21 +286,22 @@ const PokemonDetail: React.FC<PokemonDetailProps> = ({ pokemon, onBackClick, onN
             
             <div className="max-w-4xl mx-auto text-white relative z-10">
                 <button 
+                    ref={backButtonRef}
                     onClick={onBackClick}
                     aria-label="Back to list"
-                    className="absolute top-4 left-4 z-20 w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center group"
+                    className="absolute top-4 left-4 z-20 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white shadow-lg flex items-center justify-center group"
                 >
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-b from-red-500 to-red-600 flex items-center justify-center">
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-                            <div className="w-5 h-5 rounded-full bg-gray-200 border-2 border-gray-400"></div>
+                    <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-gradient-to-b from-red-500 to-red-600 flex items-center justify-center">
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gray-200 border-2 border-gray-400"></div>
                         </div>
                     </div>
                 </button>
                 
                 <div className="relative pt-20 text-center">
-                    <div className="relative w-64 h-64 md:w-80 md:h-80 mx-auto">
+                    <div className="relative w-56 h-56 sm:w-64 sm:h-64 md:w-80 md:h-80 mx-auto">
                         {!isFirst && 
-                            <button onClick={() => onNavigate('prev')} aria-label="Previous Pokémon" className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 z-20 text-white/50 hover:text-white transition text-6xl drop-shadow-lg">&lt;</button>
+                            <button onClick={() => onNavigate('prev')} aria-label="Previous Pokémon" className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 sm:-translate-x-6 z-20 text-white/50 hover:text-white transition text-5xl sm:text-6xl drop-shadow-lg">&lt;</button>
                         }
                         <img
                             src={pokemon.sprites.other['official-artwork'].front_default}
@@ -271,12 +309,12 @@ const PokemonDetail: React.FC<PokemonDetailProps> = ({ pokemon, onBackClick, onN
                             className="relative z-10 w-full h-full drop-shadow-2xl animate-float"
                         />
                         {!isLast && 
-                            <button onClick={() => onNavigate('next')} aria-label="Next Pokémon" className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 z-20 text-white/50 hover:text-white transition text-6xl drop-shadow-lg">&gt;</button>
+                            <button onClick={() => onNavigate('next')} aria-label="Next Pokémon" className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 sm:translate-x-6 z-20 text-white/50 hover:text-white transition text-5xl sm:text-6xl drop-shadow-lg">&gt;</button>
                         }
                         <div className="absolute inset-0 bg-black/20 rounded-full blur-2xl top-1/2"></div>
                     </div>
-                    <h1 className="text-5xl md:text-6xl font-black capitalize drop-shadow-lg mt-4">{pokemon.name}</h1>
-                    <p className="text-2xl font-bold text-purple-200">#{String(pokemon.id).padStart(3, '0')}</p>
+                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-black capitalize drop-shadow-lg mt-4">{pokemon.name}</h1>
+                    <p className="text-xl sm:text-2xl font-bold text-purple-200">#{String(pokemon.id).padStart(3, '0')}</p>
                     <div className="flex justify-center gap-2 mt-4">
                         {pokemon.types.map(({ type }) => (
                             <TypeBadge key={type.name} type={type.name} />
@@ -284,15 +322,15 @@ const PokemonDetail: React.FC<PokemonDetailProps> = ({ pokemon, onBackClick, onN
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 bg-purple-900 bg-opacity-50 p-6 rounded-2xl shadow-inner">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 bg-purple-900 bg-opacity-50 p-4 sm:p-6 rounded-2xl shadow-inner">
                     <div className="flex flex-col gap-4">
-                        <h2 className="text-3xl font-bold text-pink-400 border-b-2 border-pink-500 pb-2">Info</h2>
-                        <div className="grid grid-cols-2 text-lg">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-pink-400 border-b-2 border-pink-500 pb-2">Info</h2>
+                        <div className="grid grid-cols-2 text-base sm:text-lg">
                             <p><span className="font-bold text-purple-300">Height:</span> {pokemon.height / 10} m</p>
                             <p><span className="font-bold text-purple-300">Weight:</span> {pokemon.weight / 10} kg</p>
                         </div>
-                        <h3 className="text-2xl font-bold text-pink-400 mt-4">Abilities</h3>
-                        <ul className="list-disc list-inside text-lg">
+                        <h3 className="text-xl sm:text-2xl font-bold text-pink-400 mt-4">Abilities</h3>
+                        <ul className="list-disc list-inside text-base sm:text-lg">
                             {pokemon.abilities.map(({ ability, is_hidden }) => (
                                 <li key={ability.name} className="capitalize">
                                     {ability.name.replace('-', ' ')} {is_hidden && '(Hidden)'}
@@ -301,20 +339,20 @@ const PokemonDetail: React.FC<PokemonDetailProps> = ({ pokemon, onBackClick, onN
                         </ul>
                     </div>
                     <div className="flex flex-col gap-4">
-                        <h2 className="text-3xl font-bold text-pink-400 border-b-2 border-pink-500 pb-2">Base Stats</h2>
+                        <h2 className="text-2xl sm:text-3xl font-bold text-pink-400 border-b-2 border-pink-500 pb-2">Base Stats</h2>
                         {stats.map((stat, index) => (
                             <StatBar key={stat.name} stat={stat} delay={index * 100} />
                         ))}
                     </div>
                 </div>
                 
-                <div className="mt-8 bg-purple-900 bg-opacity-50 p-6 rounded-2xl shadow-inner">
-                    <h2 className="text-3xl font-bold text-pink-400 border-b-2 border-pink-500 pb-2 mb-4">Evolution Chain</h2>
+                <div className="mt-8 bg-purple-900 bg-opacity-50 p-4 sm:p-6 rounded-2xl shadow-inner">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-pink-400 border-b-2 border-pink-500 pb-2 mb-4">Evolution Chain</h2>
                     <EvolutionChainDisplay speciesUrl={pokemon.species.url} />
                 </div>
 
-                <div className="mt-8 bg-purple-900 bg-opacity-50 p-6 rounded-2xl shadow-inner">
-                    <h2 className="text-3xl font-bold text-pink-400 border-b-2 border-pink-500 pb-2 mb-4">Notable Moves</h2>
+                <div className="mt-8 bg-purple-900 bg-opacity-50 p-4 sm:p-6 rounded-2xl shadow-inner">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-pink-400 border-b-2 border-pink-500 pb-2 mb-4">Notable Moves</h2>
                     <div className="flex flex-wrap gap-2">
                         {pokemon.moves.slice(0, 15).map(({ move }, index) => (
                             <span 
@@ -329,12 +367,6 @@ const PokemonDetail: React.FC<PokemonDetailProps> = ({ pokemon, onBackClick, onN
                 </div>
             </div>
             <style>{`
-                @keyframes fade-in {
-                    from { opacity: 0; transform: translateY(10px) scale(0.98); }
-                    to { opacity: 1; transform: translateY(0) scale(1); }
-                }
-                .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
-                
                 @keyframes fade-in-pop {
                     0% { opacity: 0; transform: translateY(10px) scale(0.9); }
                     70% { opacity: 1; transform: translateY(0) scale(1.05); }
@@ -379,37 +411,53 @@ interface HeaderProps {
     regions: Region[];
     selectedRegion: string;
     onRegionChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+    isVisible: boolean;
 }
-const Header: React.FC<HeaderProps> = ({ searchTerm, onSearchChange, types, selectedType, onTypeChange, regions, selectedRegion, onRegionChange }) => {
+const Header: React.FC<HeaderProps> = ({ searchTerm, onSearchChange, types, selectedType, onTypeChange, regions, selectedRegion, onRegionChange, isVisible }) => {
     return (
-        <header className="sticky top-0 z-40 bg-purple-900/80 backdrop-blur-sm shadow-lg p-4">
+        <header className={`sticky top-0 z-40 bg-purple-900/80 backdrop-blur-sm shadow-lg p-4 transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
             <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="flex items-center gap-3">
-                    <MasterBallIcon className="w-10 h-10" />
-                    <h1 className="text-4xl font-bold text-pink-400" style={{ textShadow: '0 0 8px #f472b6' }}>MasterDex</h1>
+                <div className="flex items-center gap-3 self-start sm:self-center">
+                    <MasterBallIcon className="w-8 h-8 sm:w-10 sm:h-10" />
+                    <h1 className="text-3xl sm:text-4xl font-bold text-pink-400" style={{ textShadow: '0 0 8px #f472b6' }}>MasterDex</h1>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
                     <input
                         type="text"
-                        placeholder="Search current list..."
+                        placeholder="Search Pokémon..."
                         value={searchTerm}
                         onChange={onSearchChange}
-                        className="bg-purple-950 text-white border-2 border-pink-500 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-400 w-full sm:w-auto"
+                        className="bg-purple-950 text-white border-2 border-pink-500 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-400 w-full"
                     />
-                    <select value={selectedType} onChange={onTypeChange} className="bg-purple-950 text-white border-2 border-pink-500 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-400">
-                        <option value="">All Types</option>
-                        {types.map(type => <option key={type} value={type}>{capitalize(type)}</option>)}
-                    </select>
-                     <select value={selectedRegion} onChange={onRegionChange} className="bg-purple-950 text-white border-2 border-pink-500 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-400">
-                        <option value="">All Regions</option>
-                        {regions.map(region => <option key={region.name} value={region.name}>{capitalize(region.name)}</option>)}
-                        <option value="Legendaries">Legendaries</option>
-                    </select>
+                    <div className="grid grid-cols-2 sm:flex gap-2 sm:gap-4 w-full">
+                        <select value={selectedType} onChange={onTypeChange} className="bg-purple-950 text-white border-2 border-pink-500 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-400 w-full">
+                            <option value="">All Types</option>
+                            {types.map(type => <option key={type} value={type}>{capitalize(type)}</option>)}
+                        </select>
+                         <select value={selectedRegion} onChange={onRegionChange} className="bg-purple-950 text-white border-2 border-pink-500 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-400 w-full">
+                            <option value="">All Regions</option>
+                            {regions.map(region => <option key={region.name} value={region.name}>{capitalize(region.name)}</option>)}
+                            <option value="Legendaries">Legendaries</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </header>
     );
 }
+
+const ScrollToTopButton: React.FC<{ isVisible: boolean }> = ({ isVisible }) => (
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      className={`fixed bottom-6 right-6 z-50 w-14 h-14 transition-opacity duration-300 ${
+        isVisible ? 'opacity-100' : 'opacity-0'
+      }`}
+      aria-label="Scroll to top"
+    >
+      <MasterBallIcon className="w-full h-full" />
+    </button>
+);
+
 
 // --- MAIN APP COMPONENT ---
 const App: React.FC = () => {
@@ -420,15 +468,45 @@ const App: React.FC = () => {
     const [offset, setOffset] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     
+    // UI State
+    const [headerVisible, setHeaderVisible] = useState(true);
+    const [scrollTopVisible, setScrollTopVisible] = useState(false);
+    const lastScrollY = useRef(0);
+    
     // Filters
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedType, setSelectedType] = useState('');
     const [selectedRegion, setSelectedRegion] = useState('');
     const [types, setTypes] = useState<string[]>([]);
     
+    const debouncedSearchTerm = useDebounce(searchTerm, 300);
     const observer = useRef<IntersectionObserver>();
     const loaderRef = useRef<HTMLDivElement>(null);
+
     const isFilterActive = !!selectedType || !!selectedRegion;
+
+    // --- Effects ---
+    
+    // Header & Scroll-to-top visibility logic
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            if (currentScrollY > 200) {
+                setScrollTopVisible(true);
+            } else {
+                setScrollTopVisible(false);
+            }
+
+            if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+                setHeaderVisible(false); // Scrolling down
+            } else {
+                setHeaderVisible(true); // Scrolling up
+            }
+            lastScrollY.current = currentScrollY;
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     // Fetch Pokemon types for filter dropdown
     useEffect(() => {
@@ -442,7 +520,6 @@ const App: React.FC = () => {
     }, []);
 
     const fetchAndSetPokemonDetails = async (pokemonList: { pokemon?: PokemonListResult; }[] | PokemonListResult[]) => {
-        // This function now handles both {pokemon: {url: ...}} and {url: ...} structures
         const pokemonUrls = pokemonList.map(p => 'pokemon' in p && p.pokemon ? p.pokemon.url : (p as PokemonListResult).url);
         const uniqueUrls = [...new Set(pokemonUrls)];
         const pokemonPromises = uniqueUrls.map(url => fetchJson<Pokemon>(url));
@@ -456,7 +533,7 @@ const App: React.FC = () => {
     useEffect(() => {
         const fetchFilteredPokemon = async () => {
             setLoading(true);
-            setSourcePokemon([]);
+            setDisplayedPokemon(isFilterActive ? [] : displayedPokemon); // Show skeleton on filter, keep old list otherwise
             setSearchTerm('');
             
             try {
@@ -496,8 +573,6 @@ const App: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedRegion, selectedType]);
 
-
-    // Function to fetch a batch of Pokemon for infinite scroll
     const fetchPokemonBatch = useCallback(async (currentOffset: number, isReset: boolean = false) => {
         if (loading && !isReset) return;
         setLoading(true);
@@ -543,16 +618,22 @@ const App: React.FC = () => {
     // Apply search term filter
     useEffect(() => {
         let filtered = sourcePokemon;
-        if (searchTerm) {
+        if (debouncedSearchTerm) {
             filtered = sourcePokemon.filter(pokemon => 
-                pokemon.name.toLowerCase().includes(searchTerm.toLowerCase())
+                pokemon.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
             );
         }
         setDisplayedPokemon(filtered);
-    }, [searchTerm, sourcePokemon]);
+    }, [debouncedSearchTerm, sourcePokemon]);
 
-    const handleCardClick = (pokemon: Pokemon) => setSelectedPokemon(pokemon);
-    const handleBackClick = () => setSelectedPokemon(null);
+    // --- Handlers ---
+    const handleCardClick = (pokemon: Pokemon) => {
+        setSelectedPokemon(pokemon);
+    };
+    
+    const handleBackClick = () => {
+        setSelectedPokemon(null);
+    };
 
     const handleNavigation = (direction: 'next' | 'prev') => {
         if (!selectedPokemon) return;
@@ -566,8 +647,8 @@ const App: React.FC = () => {
     const currentIndex = selectedPokemon ? displayedPokemon.findIndex(p => p.id === selectedPokemon.id) : -1;
 
     return (
-        <div className="min-h-screen text-white font-sans">
-            {selectedPokemon ? (
+        <div className="min-h-screen text-white font-sans bg-purple-950">
+             {selectedPokemon ? (
                 <PokemonDetail 
                     pokemon={selectedPokemon} 
                     onBackClick={handleBackClick}
@@ -586,11 +667,12 @@ const App: React.FC = () => {
                         regions={REGIONS}
                         selectedRegion={selectedRegion}
                         onRegionChange={e => { setSelectedType(''); setSelectedRegion(e.target.value); }}
+                        isVisible={headerVisible}
                     />
 
                     <main className="container mx-auto p-4">
-                        {loading && displayedPokemon.length === 0 ? <LoadingSpinner /> : (
-                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {loading && displayedPokemon.length === 0 ? <SkeletonGrid /> : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                                 {displayedPokemon.map(pokemon => (
                                     <PokemonCard 
                                         key={pokemon.id} 
@@ -601,11 +683,12 @@ const App: React.FC = () => {
                             </div>
                         )}
                         <div ref={loaderRef}>
-                           {loading && displayedPokemon.length > 0 && <LoadingSpinner />}
+                        {loading && displayedPokemon.length > 0 && <LoadingSpinner />}
                         </div>
-                         {!hasMore && !loading && !isFilterActive && <p className="text-center text-purple-300 py-8">End of the MasterDex.</p>}
-                         {isFilterActive && !loading && displayedPokemon.length === 0 && <p className="text-center text-purple-300 py-8">No Pokémon found for this filter.</p>}
+                        {!hasMore && !loading && !isFilterActive && <p className="text-center text-purple-300 py-8">End of the MasterDex.</p>}
+                        {isFilterActive && !loading && displayedPokemon.length === 0 && <p className="text-center text-purple-300 py-8">No Pokémon found for this filter.</p>}
                     </main>
+                    <ScrollToTopButton isVisible={scrollTopVisible} />
                 </>
             )}
         </div>
