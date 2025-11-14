@@ -78,3 +78,17 @@ export interface EvolutionNode {
 export interface EvolutionChain {
   chain: EvolutionNode;
 }
+
+export interface MoveDetail {
+  id: number;
+  name: string;
+  accuracy: number | null;
+  power: number | null;
+  pp: number;
+  type: {
+    name: string;
+  };
+  damage_class: {
+    name: string;
+  };
+}

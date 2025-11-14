@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Pokemon, PokemonListResult, Region, Species, EvolutionChain, EvolutionNode } from './types';
+import { Pokemon, PokemonListResult, Region, Species, EvolutionChain, EvolutionNode, MoveDetail } from './types';
 import { API_BASE_URL, POKEMON_PAGE_LIMIT, REGIONS, TYPE_COLORS, TYPE_GRADIENTS, LEGENDARY_AND_MYTHICAL_POKEMON, POKEMON_COLOR_GRADIENTS, TYPE_GLOW_COLORS } from './constants';
 
 // --- HOOKS ---
@@ -63,6 +62,23 @@ const DetailedPokeballIcon: React.FC<{ className?: string }> = ({ className }) =
         <circle cx="50" cy="50" r="8" stroke="currentColor" strokeWidth="1"/>
         <path d="M50 2C50 2 62 25 50 50C38 25 50 2 50 2Z" fill="currentColor" opacity="0.1"/>
         <path d="M50 98C50 98 62 75 50 50C38 75 50 98 50 98Z" fill="currentColor" opacity="0.1"/>
+    </svg>
+);
+
+const PhysicalDamageIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12.6,2.2l1.8,4.2l4.4,0.5c0.8,0.1,1.1,1,0.5,1.5l-3.3,3.1l0.9,4.5c0.2,0.8-0.7,1.4-1.4,1l-3.8-2.2l-3.8,2.2c-0.7,0.4-1.5-0.2-1.4-1l0.9-4.5l-3.3-3.1C1.1,8,1.4,7,2.2,6.9l4.4-0.5l1.8-4.2C8.8,1.5,9.7,1.5,10.2,2.2L12.6,2.2z"/>
+    </svg>
+);
+const SpecialDamageIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="12" r="6"/>
+        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/>
+    </svg>
+);
+const StatusDamageIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6Z"/>
     </svg>
 );
 
@@ -230,6 +246,77 @@ const EvolutionChainDisplay: React.FC<{ speciesUrl: string }> = ({ speciesUrl })
     );
 };
 
+const MoveDetailCard: React.FC<{ move: MoveDetail; delay: number }> = ({ move, delay }) => {
+    const typeColor = TYPE_COLORS[move.type.name]?.split(' ')[0] || 'bg-gray-400';
+    const DamageIcon = move.damage_class.name === 'physical' ? PhysicalDamageIcon : move.damage_class.name === 'special' ? SpecialDamageIcon : StatusDamageIcon;
+
+    return (
+        <div 
+            className="p-4 bg-purple-900 rounded-lg shadow-md border border-purple-800 animate-fade-in"
+            style={{ animationDelay: `${delay}ms`, opacity: 0 }}
+        >
+            <div className="flex justify-between items-start">
+                <div>
+                    <h4 className="text-lg font-bold capitalize text-white">{move.name.replace('-', ' ')}</h4>
+                    <TypeBadge type={move.type.name} />
+                </div>
+                <div className="flex flex-col items-center">
+                     <DamageIcon className={`w-6 h-6 ${typeColor} rounded-full p-1 text-white`} />
+                    <span className="text-xs font-semibold text-purple-300 mt-1 capitalize">{move.damage_class.name}</span>
+                </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2 mt-3 text-center">
+                <div>
+                    <p className="text-sm font-bold text-purple-300">Power</p>
+                    <p className="text-lg font-semibold">{move.power ?? '—'}</p>
+                </div>
+                <div>
+                    <p className="text-sm font-bold text-purple-300">Accuracy</p>
+                    <p className="text-lg font-semibold">{move.accuracy ?? '—'}</p>
+                </div>
+                <div>
+                    <p className="text-sm font-bold text-purple-300">PP</p>
+                    <p className="text-lg font-semibold">{move.pp ?? '—'}</p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const NotableMoves: React.FC<{ moves: { move: { name: string, url: string } }[] }> = ({ moves }) => {
+    const [moveDetails, setMoveDetails] = useState<MoveDetail[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchMoveDetails = async () => {
+            try {
+                setLoading(true);
+                const movesToFetch = moves.slice(0, 12);
+                const movePromises = movesToFetch.map(m => fetchJson<MoveDetail>(m.move.url));
+                const results = await Promise.all(movePromises);
+                setMoveDetails(results);
+            } catch (error) {
+                console.error("Failed to fetch move details:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchMoveDetails();
+    }, [moves]);
+
+    if (loading) return <div className="flex justify-center p-4"><LoadingSpinner/></div>;
+    if (moveDetails.length === 0) return <p className="text-center text-purple-300">No move data available.</p>;
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {moveDetails.map((move, index) => (
+                <MoveDetailCard key={move.id} move={move} delay={index * 50} />
+            ))}
+        </div>
+    );
+};
+
+
 interface PokemonDetailProps {
     pokemon: Pokemon;
     onBackClick: () => void;
@@ -353,20 +440,13 @@ const PokemonDetail: React.FC<PokemonDetailProps> = ({ pokemon, onBackClick, onN
 
                 <div className="mt-8 bg-purple-900 bg-opacity-50 p-4 sm:p-6 rounded-2xl shadow-inner">
                     <h2 className="text-2xl sm:text-3xl font-bold text-pink-400 border-b-2 border-pink-500 pb-2 mb-4">Notable Moves</h2>
-                    <div className="flex flex-wrap gap-2">
-                        {pokemon.moves.slice(0, 15).map(({ move }, index) => (
-                            <span 
-                                key={move.name} 
-                                className="bg-purple-800 px-3 py-1 rounded-full text-sm capitalize animate-fade-in"
-                                style={{ animationDelay: `${index * 50}ms`, opacity: 0 }}
-                            >
-                                {move.name.replace('-', ' ')}
-                            </span>
-                        ))}
-                    </div>
+                    <NotableMoves moves={pokemon.moves} />
                 </div>
             </div>
             <style>{`
+                @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+                .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+                
                 @keyframes fade-in-pop {
                     0% { opacity: 0; transform: translateY(10px) scale(0.9); }
                     70% { opacity: 1; transform: translateY(0) scale(1.05); }
